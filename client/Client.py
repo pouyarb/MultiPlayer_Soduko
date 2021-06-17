@@ -10,9 +10,9 @@ class Client:
         self.ser_port = port
         self.name = name
         self.com_name = None
-        self.score = 0
-        self.com_score = 0
-        self.table = None
+        self.score = '0'
+        self.com_score = '0'
+        self.table = []
 
     def run(self) -> None:
         self.sock.connect((self.ser_host, self.ser_port))
@@ -25,14 +25,16 @@ class Client:
             n = input('Enter a number: ')
             if n == '1':
                 self.send('create', '0')
-                self.table = self.get_data()['table']
+                data = self.get_data()
+                self.make_table(data['table'])
                 self.play(False)
                 os.system('cls')
             elif n == '2':
                 s = input('Please enter game code: ')
                 self.send('join', s)
-                self.table = self.get_data()['table']
-                self.play(True)
+                self.table = self.get_data()
+                self.make_table(data['table'])
+                self.play(False)
                 os.system('cls')
             elif n == '3':
                 break
@@ -60,14 +62,19 @@ class Client:
                     self.submit(n, px, py)
                     data = self.get_data()
                     self.score = int(data['score'])
-                    turn = bool(data['turn'])
-                    if data['check'] == 't':
+                    turn = True if data['turn'] == 't' else False
+                    if data['update'] == 't':
                         self.table[px][py] = n
+                        self.score = data['your_score']
+                        self.com_score = data['com_score']
             else:
                 data = self.get_data()
-                turn = data['turn']
+                turn = True if data['turn'] == 't' else False
                 if data['update'] == 't':
                     self.table[data['pos_x']][data['pos_y']] = data['value']
+                    self.score = data['your_score']
+                    self.com_score = data['com_score']
+
 
     def submit(self, value, pos_x, pos_y) -> None:
         data = {
@@ -96,6 +103,12 @@ class Client:
         print(f'{self.com_name} : {self.com_score}')
         for i in range(9):
             print(*self.table[i])
+
+    def make_table(self, ls):
+        i = 0
+        for j in range(9):
+            self.table.append(ls[i : i + 9])
+            i = i + 9
 
 if __name__ == '__main__':
     server_host = 'localhost'
