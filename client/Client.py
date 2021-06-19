@@ -1,11 +1,12 @@
 import os
+from time import sleep
 import json
-from socket import socket
+from socket import socket, AF_INET, SOCK_STREAM
 
 class Client:
 
     def __init__(self, host, port, name) -> None:
-        self.sock = socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket(AF_INET, SOCK_STREAM)
         self.ser_host = host
         self.ser_port = port
         self.name = name
@@ -13,6 +14,7 @@ class Client:
         self.score = '0'
         self.com_score = '0'
         self.table = []
+        self.session = None
 
     def run(self) -> None:
         self.sock.connect((self.ser_host, self.ser_port))
@@ -24,19 +26,11 @@ class Client:
             print('3-Exit')
             n = input('Enter a number: ')
             if n == '1':
-                self.send('create', '0')
-                data = self.get_data()
-                self.make_table(data['table'])
-                self.play(False)
-                os.system('cls')
+                self.create_game()
             elif n == '2':
-                s = input('Please enter game code: ')
-                self.send('join', s)
-                self.table = self.get_data()
-                self.make_table(data['table'])
-                self.play(False)
-                os.system('cls')
+                self.join_game()
             elif n == '3':
+                print('exit...')
                 break
             else :
                 os.system('cls')
@@ -46,9 +40,11 @@ class Client:
     def play(self, turn) -> None:
         while True:
             if turn:
+                os.system('cls')
                 self.show_table()
-                n = int(input('enter value in range 1-9 to submit or enter 0 to quit: '))
+                n = int(input('enter value in range 1-9 to submit or enter 0 to quit this game: '))
                 if n == 0:
+                    self.send('disconnect', '-')
                     break
                 elif n < 10:
                     px = int(input('enter horizontal axis: '))
@@ -61,20 +57,59 @@ class Client:
                         px = int(input('vertical axis: '))
                     self.submit(n, px, py)
                     data = self.get_data()
-                    self.score = int(data['score'])
-                    turn = True if data['turn'] == 't' else False
                     if data['update'] == 't':
                         self.table[px][py] = n
                         self.score = data['your_score']
                         self.com_score = data['com_score']
+                        turn = False
+                        if data['turn'] == 'w':
+                            print('\tfinal scores')
+                            self.show_table()
+                            print(data['message'])
+                            break
             else:
                 data = self.get_data()
-                turn = True if data['turn'] == 't' else False
+                turn = True
                 if data['update'] == 't':
-                    self.table[data['pos_x']][data['pos_y']] = data['value']
-                    self.score = data['your_score']
-                    self.com_score = data['com_score']
+                        self.table[data['pos_x']][data['pos_y']] = data['value']
+                        self.score = data['your_score']
+                        self.com_score = data['com_score']
+                        if data['turn'] == 'w':
+                            print('\tfinal scores')
+                            self.show_table()
+                            print(data['message'])
+                            break
+                if data['turn'] == 'd':
+                    print(data['message'])
+                    break
 
+
+    def create_game(self) -> None:
+        self.send('create', '0')
+        data = self.get_data()
+        print(data['message'])
+        if data['status'] == '200':
+            self.make_table(data['table'])
+        else:
+            return
+        data = self.get_data()
+        print(data['message'])
+        if data['status'] == '200':
+            self.com_name = data['com_name'] 
+            self.session = data['session']
+            sleep(2)
+            self.play(True)
+
+    def join_game(self) -> None:
+        s = input('Please enter game code: ')
+        self.send('join', s)
+        data = self.get_data()
+        print(data['message'])
+        if data['status'] == '200':
+            self.make_table(data['table'])
+            self.session = s
+            self.com_name = data['com_name']
+            self.play(False)
 
     def submit(self, value, pos_x, pos_y) -> None:
         data = {
@@ -98,7 +133,6 @@ class Client:
         return json.loads(data)
 
     def show_table(self) -> None:
-        os.system('cls')
         print(f'{self.name} : {self.score}')
         print(f'{self.com_name} : {self.com_score}')
         for i in range(9):
