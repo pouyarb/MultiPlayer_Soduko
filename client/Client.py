@@ -16,6 +16,13 @@ class Client:
         self.table = []
         self.session = None
 
+    def reset(self) -> None:
+        self.com_name = None
+        self.score = '0'
+        self.com_score = '0'
+        self.table = []
+        self.session = None
+
     def run(self) -> None:
         self.sock.connect((self.ser_host, self.ser_port))
         print(f'connected to server at {self.ser_host} on port {self.ser_port}')
@@ -30,6 +37,7 @@ class Client:
             elif n == '2':
                 self.join_game()
             elif n == '3':
+                self.send('disconnect', '0')
                 print('exit...')
                 break
             else :
@@ -39,12 +47,14 @@ class Client:
 
     def play(self, turn) -> None:
         while True:
+            os.system('cls')
+            print('\tscores')
+            self.show_table()
             if turn:
-                os.system('cls')
-                self.show_table()
                 n = int(input('enter value in range 1-9 to submit or enter 0 to quit this game: '))
                 if n == 0:
-                    self.send('disconnect', '-')
+                    self.send('quit', self.session)
+                    self.reset()
                     break
                 elif n < 10:
                     px = int(input('enter horizontal axis: '))
@@ -54,15 +64,15 @@ class Client:
                     py = int(input('enter vertical axis: '))
                     while py < 1 or py > 9:
                         print('not in range')
-                        px = int(input('vertical axis: '))
+                        py = int(input('vertical axis: '))
                     self.submit(n, px, py)
                     data = self.get_data()
                     if data['update'] == 't':
-                        self.table[px][py] = n
+                        self.table[px - 1][py - 1] = str(n)
                         self.score = data['your_score']
                         self.com_score = data['com_score']
                         turn = False
-                        if data['turn'] == 'w':
+                        if data['turn'] == 'e':
                             print('\tfinal scores')
                             self.show_table()
                             print(data['message'])
@@ -71,10 +81,10 @@ class Client:
                 data = self.get_data()
                 turn = True
                 if data['update'] == 't':
-                        self.table[data['pos_x']][data['pos_y']] = data['value']
+                        self.table[int(data['pos_x']) - 1][int(data['pos_y']) - 1] = data['value']
                         self.score = data['your_score']
                         self.com_score = data['com_score']
-                        if data['turn'] == 'w':
+                        if data['turn'] == 'e':
                             print('\tfinal scores')
                             self.show_table()
                             print(data['message'])
@@ -87,18 +97,20 @@ class Client:
     def create_game(self) -> None:
         self.send('create', '0')
         data = self.get_data()
-        print(data['message'])
+        print(f'{ data["message"] }, session : {data["session"]}')
         if data['status'] == '200':
             self.make_table(data['table'])
         else:
             return
-        data = self.get_data()
-        print(data['message'])
-        if data['status'] == '200':
-            self.com_name = data['com_name'] 
-            self.session = data['session']
-            sleep(2)
-            self.play(True)
+        while True:
+            data = self.get_data()
+            print(data['message'])
+            if data['status'] == '200':
+                self.com_name = data['com_name'] 
+                self.session = data['session']
+                sleep(1)
+                self.play(True)
+                break
 
     def join_game(self) -> None:
         s = input('Please enter game code: ')
@@ -129,7 +141,13 @@ class Client:
         self.sock.sendall(str(json.dumps(data)).encode('ascii'))
 
     def get_data(self):
-        data = self.sock.recv(4096).decode('ascii')
+        data = None
+        try:
+            data = self.sock.recv(4096).decode('ascii')
+        except:
+            print('server doesnt respond')
+            self.sock.close()
+            return dict()
         return json.loads(data)
 
     def show_table(self) -> None:
@@ -141,7 +159,7 @@ class Client:
     def make_table(self, ls):
         i = 0
         for j in range(9):
-            self.table.append(ls[i : i + 9])
+            self.table.append(list(ls[i : i + 9]))
             i = i + 9
 
 if __name__ == '__main__':
