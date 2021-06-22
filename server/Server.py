@@ -37,6 +37,9 @@ class Server:
             try:
                 data = self.get_data(c_sock)
             except:
+                if game != None:
+                    if game.session in self._games:
+                        self.quit(game, player_num, 'disconnect...', data['session'])
                 print(f'client {addr[0]} : {addr[1]} disconnected badly')
                 break
             #print(data['name'])
