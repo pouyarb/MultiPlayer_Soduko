@@ -67,7 +67,7 @@ class Client:
                         py = int(input('vertical axis: '))
                     self.submit(n, px, py)
                     data = self.get_data()
-                    turn = False
+                    turn = False if data['turn'] == 'f' else True
                     if data['update'] == 't':
                         self.table[px - 1][py - 1] = str(n)
                         self.score = data['your_score']
@@ -80,8 +80,9 @@ class Client:
                             self.reset()
                             break
             else:
+                #t = threading.Thread(target=self.waiting).start()
                 data = self.get_data()
-                turn = True
+                turn = True if data['turn'] == 't' else False
                 if data['turn'] == 'd':
                     print(data['message'])
                     self.reset()
@@ -128,7 +129,7 @@ class Client:
             self.com_name = data['com_name']
             self.play(False)
 
-    def submit(self, value, pos_x, pos_y) -> None:
+    def submit(self, value, pos_x, pos_y) -> dict:
         data = {
             'command' : 'submit',
             'value': str(value),
@@ -151,6 +152,7 @@ class Client:
             data = self.sock.recv(4096).decode('ascii')
         except:
             print('server doesnt respond')
+            sleep(5)
             self.sock.close()
             return dict()
         return json.loads(data)
@@ -167,6 +169,34 @@ class Client:
         for j in range(9):
             self.table.append(list(ls[i : i + 9]))
             i = i + 9
+
+    def waiting(self) -> None:
+        animation = [
+        "[        ]",
+        "[=       ]",
+        "[===     ]",
+        "[====    ]",
+        "[=====   ]",
+        "[======  ]",
+        "[======= ]",
+        "[========]",
+        "[ =======]",
+        "[  ======]",
+        "[   =====]",
+        "[    ====]",
+        "[     ===]",
+        "[      ==]",
+        "[       =]",
+        "[        ]",
+        "[        ]"
+        ]
+
+        i = 0
+        print('waiting for response')
+        while True:
+            print(animation[i % len(animation)], end='\r')
+            sleep(.5)
+            i += 1
 
 if __name__ == '__main__':
     server_host = 'localhost'

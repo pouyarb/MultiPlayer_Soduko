@@ -4,7 +4,7 @@ class Sudoku:
 
     def __init__(self, name, sock) -> None:
         self.real_table = self.initial_table()
-        self.visible = 80
+        self.visible = 79
         self.visible_table = self.create_visible_table()
         self.player_1_name = name
         self.player_2_name = None
