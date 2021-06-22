@@ -20,7 +20,7 @@ class Client:
         self.com_name = None
         self.score = '0'
         self.com_score = '0'
-        self.table = []
+        self.table.clear()
         self.session = None
 
     def run(self) -> None:
@@ -55,7 +55,7 @@ class Client:
                 if n == 0:
                     self.send('quit', self.session)
                     self.reset()
-                    break
+                    break   
                 elif n < 10:
                     px = int(input('enter horizontal axis: '))
                     while px < 1 or px > 9:
@@ -67,31 +67,36 @@ class Client:
                         py = int(input('vertical axis: '))
                     self.submit(n, px, py)
                     data = self.get_data()
+                    turn = False
                     if data['update'] == 't':
                         self.table[px - 1][py - 1] = str(n)
                         self.score = data['your_score']
                         self.com_score = data['com_score']
-                        turn = False
                         if data['turn'] == 'e':
+                            os.system('cls')
                             print('\tfinal scores')
                             self.show_table()
                             print(data['message'])
+                            self.reset()
                             break
             else:
                 data = self.get_data()
                 turn = True
+                if data['turn'] == 'd':
+                    print(data['message'])
+                    self.reset()
+                    break
                 if data['update'] == 't':
                         self.table[int(data['pos_x']) - 1][int(data['pos_y']) - 1] = data['value']
                         self.score = data['your_score']
                         self.com_score = data['com_score']
                         if data['turn'] == 'e':
+                            os.system('cls')
                             print('\tfinal scores')
                             self.show_table()
                             print(data['message'])
+                            self.reset()
                             break
-                if data['turn'] == 'd':
-                    print(data['message'])
-                    break
 
 
     def create_game(self) -> None:
@@ -99,6 +104,7 @@ class Client:
         data = self.get_data()
         print(f'{ data["message"] }, session : {data["session"]}')
         if data['status'] == '200':
+            self.session = data["session"]
             self.make_table(data['table'])
         else:
             return
@@ -107,8 +113,7 @@ class Client:
             print(data['message'])
             if data['status'] == '200':
                 self.com_name = data['com_name'] 
-                self.session = data['session']
-                sleep(1)
+                sleep(2)
                 self.play(True)
                 break
 
@@ -158,6 +163,7 @@ class Client:
 
     def make_table(self, ls):
         i = 0
+        self.table.clear()
         for j in range(9):
             self.table.append(list(ls[i : i + 9]))
             i = i + 9

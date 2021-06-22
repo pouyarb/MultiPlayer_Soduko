@@ -4,7 +4,7 @@ class Sudoku:
 
     def __init__(self, name, sock) -> None:
         self.real_table = self.initial_table()
-        self.visible = 50
+        self.visible = 80
         self.visible_table = self.create_visible_table()
         self.player_1_name = name
         self.player_2_name = None
@@ -13,6 +13,7 @@ class Sudoku:
         self.player_1_sock = sock
         self.player_2_sock = None
         self.string_table = self.make_string()
+        self.session = None
 
     def initial_table(self) :
         base  = 3
@@ -64,10 +65,10 @@ class Sudoku:
 
     def check_input(self, player, value, pos_x, pos_y) -> int:
         result = 0
-        pos_x = int(pos_x) - 1
-        pos_y = int(pos_y) - 1
-        if self.real_table[pos_x][pos_y] == value:
-            self.visible_table[pos_x][pos_y] = value
+        x = int(pos_x) - 1
+        y = int(pos_y) - 1
+        if self.real_table[x][y] == value and self.visible_table[x][y] == '-':
+            self.visible_table[x][y] = value
             self.visible += 1
             if self.visible == 81:
                 result = 2

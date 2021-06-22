@@ -56,8 +56,6 @@ class Server:
                     self.quit(game, player_num, 'quit the game...', data['session'])
                     continue
                 elif 'disconnect' == com:
-                    if game != None:
-                        self.quit(game, player_num, 'quit the game...', data['session'])
                     print(f'client {addr[0]} : {addr[1]} disconnected')
                     break
                 else:
@@ -85,6 +83,7 @@ class Server:
             session = str(randint(10 ** 4, 10 ** 5))
             if session not in self._games:
                 self._games[session] = game
+                game.session = session
                 break
         self.send(c_sock, '200', 'game created', game.string_table, session, 'none')
         print(f'{name} create game. session : {session}')
@@ -97,7 +96,7 @@ class Server:
             game.player_2_name = name
             game.player_2_sock = c_sock
             self.send(c_sock, '200', f'you join game {session}', game.string_table, session, game.player_1_name)
-            self.send(game.player_1_sock, '200', f'{name} join the game', '-', '-', name)
+            self.send(game.player_1_sock, '200', f'{name} join the game', '-', session, name)
             print(f'{name} join game. session : {session}')
             return game
         self.send(c_sock, '300', 'session not found', 'none', 'none', 'none')
@@ -146,6 +145,11 @@ class Server:
             else:
                 data1['message'] = 'sorry you lose!'
                 data2['message'] = 'congratulations you won!'
+            session = game.session
+            try:
+                del self._games[session]
+            except:
+                print('session delete problem')
         c_sock.sendall(str(json.dumps(data1)).encode('ascii'))
         if player_num == '1':
             game.player_2_sock.sendall(str(json.dumps(data2)).encode('ascii'))   
@@ -156,10 +160,10 @@ class Server:
     def quit(self, game, player_num, message, session) -> None:
         data = {'turn' : 'd'}
         if player_num == '1':
-            data['message'] = f'{game.player_2_name} {message}'
+            data['message'] = f'{game.player_1_name} {message}'
             game.player_2_sock.sendall(str(json.dumps(data)).encode('ascii'))
         else:
-            data['message'] = f'{game.player_1_name} {message}'
+            data['message'] = f'{game.player_2_name} {message}'
             game.player_1_sock.sendall(str(json.dumps(data)).encode('ascii'))
         try:
             del self._games[session]
